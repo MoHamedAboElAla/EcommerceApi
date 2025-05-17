@@ -44,6 +44,10 @@ namespace EcommerceApi.Controllers
             }
             return Ok(cartDto);
         }
-        
+        [HttpGet("PaymentMethods")]
+        public IActionResult GetPaymentMethods()
+        {
+            return Ok(OrderHelper.PaymentMethods);
+        }
     }
 }
