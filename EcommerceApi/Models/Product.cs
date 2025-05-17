@@ -17,7 +17,7 @@ namespace EcommerceApi.Models
         [Precision(18, 2)]
         public decimal Price { get; set; }
         [MaxLength(500)]
-        public string Descritption { get; set; } = "";
+        public string Description { get; set; } = "";
         [MaxLength(100)]
         public string ImageFileName { get; set; } = "";
         public DateTime CreatedAt { get; set; } = DateTime.Now;
