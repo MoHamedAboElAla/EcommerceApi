@@ -1,9 +1,11 @@
 ﻿using EcommerceApi.Models;
 using EcommerceApi.Models.DTO;
 using EcommerceApi.Services;
+using EllipticCurve.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -21,6 +23,47 @@ namespace EcommerceApi.Controllers
         }
 
         [Authorize]
+        [HttpGet]
+        public IActionResult GetOrders()
+        {
+            var userId = JwtReader.GetUserId(User);
+            var role = _context.Users.Find(userId)?.Role;
+
+            IQueryable<Order> query = _context.Orders.Include(u => u.User)
+                .Include(o => o.orderItems)
+                .ThenInclude(p => p.Product);
+
+            if (role != "Admin")
+            {
+                query = query.Where(o => o.UserId == userId);
+            }
+            query = query.OrderByDescending(i => i.Id);
+
+            var orders = query.ToList();
+
+
+            //To Solve The problem of the object cycle
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.ReferenceHandler = ReferenceHandler.Preserve;
+            options.WriteIndented = true;
+            // Serialize the orders to JSON
+            var ordersJson = JsonSerializer.Serialize(orders, options);
+            // Return the serialized JSON as the response
+            return Ok(ordersJson);
+
+            //foreach (var order in orders)
+            //{
+            //    foreach (var item in order.orderItems)
+            //    {
+            //        item.Order = null; // Prevent circular reference by setting Product to null
+            //    }
+            //    order.User.Password = null; // Prevent circular reference by setting Password to null
+            //}
+
+        }
+    
+
+         [Authorize]
         [HttpPost]
         public IActionResult Create(OrderDto orderDto) 
         {
