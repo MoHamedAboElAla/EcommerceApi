@@ -340,9 +340,5 @@ namespace EcommerceApi.Controllers
             return Ok(user);
         }
 
-
-
-    
-
     }
 }

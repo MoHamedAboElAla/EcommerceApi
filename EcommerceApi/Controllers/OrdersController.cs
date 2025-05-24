@@ -81,11 +81,44 @@ namespace EcommerceApi.Controllers
                 PageSize = pageSize
 
             };
+
             return Ok(response);
-
-
         }
-    
+
+        [HttpGet("{id}")]
+        public IActionResult GetOrderById(int? id)
+        {
+            int userId = JwtReader.GetUserId(User);
+            var role = _context.Users.Find(userId)?.Role;
+
+            Order? order = null;
+
+            if (role == "Admin")
+            {
+                order = _context.Orders.Include(u => u.User)
+                    .Include(o => o.orderItems)
+                    .ThenInclude(p => p.Product)
+                    .FirstOrDefault(i => i.Id == id);
+            }
+            else
+            {
+                order = _context.Orders.Include(u => u.User)
+                    .Include(o => o.orderItems)
+                    .ThenInclude(p => p.Product)
+                    .FirstOrDefault(i => i.Id == id && i.UserId == userId);
+            }
+            if (order == null)
+            {
+                return NotFound($"Order with id {id} not found");
+            }
+            foreach (var item in order.orderItems)
+            {
+                item.Order = null; // Prevent circular reference by setting Product to null
+            }
+            order.User.Password = ""; // Hide the password from the response
+
+            return Ok(order);
+        }
 
          [Authorize]
         [HttpPost]
@@ -151,9 +184,9 @@ namespace EcommerceApi.Controllers
             options.WriteIndented = true;
             var OrderJson = JsonSerializer.Serialize(order, options);
             return Ok(OrderJson);
-
-            
         }
+
+
 
     }
 }
