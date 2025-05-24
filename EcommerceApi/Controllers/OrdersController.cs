@@ -24,7 +24,7 @@ namespace EcommerceApi.Controllers
 
         [Authorize]
         [HttpGet]
-        public IActionResult GetOrders()
+        public IActionResult GetOrders(int? page)
         {
             var userId = JwtReader.GetUserId(User);
             var role = _context.Users.Find(userId)?.Role;
@@ -39,26 +39,50 @@ namespace EcommerceApi.Controllers
             }
             query = query.OrderByDescending(i => i.Id);
 
+            if(page ==null || page < 1)
+            {
+                page = 1;
+            }
+            int pageSize = 5; // Number of orders per page
+            int totalPages = 0;
+
+           decimal count = query.Count(); // Get the total number of orders
+           totalPages = (int) Math.Ceiling(count / pageSize); // Calculate total pages
+
+
+            query = query.Skip(((int)page - 1) * pageSize)
+                .Take(pageSize);
+
+
             var orders = query.ToList();
 
 
-            //To Solve The problem of the object cycle
-            JsonSerializerOptions options = new JsonSerializerOptions();
-            options.ReferenceHandler = ReferenceHandler.Preserve;
-            options.WriteIndented = true;
-            // Serialize the orders to JSON
-            var ordersJson = JsonSerializer.Serialize(orders, options);
-            // Return the serialized JSON as the response
-            return Ok(ordersJson);
+            ////To Solve The problem of the object cycle
+            //JsonSerializerOptions options = new JsonSerializerOptions();
+            //options.ReferenceHandler = ReferenceHandler.Preserve;
+            //options.WriteIndented = true;
+            //// Serialize the orders to JSON
+            //var ordersJson = JsonSerializer.Serialize(orders, options);
+            //// Return the serialized JSON as the response
 
-            //foreach (var order in orders)
-            //{
-            //    foreach (var item in order.orderItems)
-            //    {
-            //        item.Order = null; // Prevent circular reference by setting Product to null
-            //    }
-            //    order.User.Password = null; // Prevent circular reference by setting Password to null
-            //}
+            foreach (var order in orders)
+            {
+                foreach (var item in order.orderItems)
+                {
+                    item.Order = null; // Prevent circular reference by setting Product to null
+                }
+                order.User.Password = "";
+            }
+            var response = new
+            {
+                Orders = orders,
+                TotalPages = totalPages,
+                Page = page,
+                PageSize = pageSize
+
+            };
+            return Ok(response);
+
 
         }
     
