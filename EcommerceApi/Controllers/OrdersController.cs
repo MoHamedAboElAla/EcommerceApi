@@ -186,7 +186,43 @@ namespace EcommerceApi.Controllers
             return Ok(OrderJson);
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]
+        public IActionResult Update(int? id, string? paymentStatus, string? orderStatus)
+        {
+            if (paymentStatus == null && orderStatus == null)
+            {
+                ModelState.AddModelError("Order", "Please provide at least one field to update (paymentStatus or orderStatus)");
+                return BadRequest(ModelState);
+            }
+            if (paymentStatus != null && !OrderHelper.PaymentStatus.Contains(paymentStatus))
+            {
+                ModelState.AddModelError("Payment Status", "Please select a valid Payment Status");
+                return BadRequest(ModelState);
+            }
+            if (orderStatus != null && !OrderHelper.OrderStatus.Contains(orderStatus))
+            {
+                ModelState.AddModelError("Order Status", "Please select a valid Order Status");
+                return BadRequest(ModelState);
+            }
+            var order = _context.Orders.Find(id);
+            if (order == null)
+            {
+                return NotFound($"Order with id {id} not found");
+            }
+            if (paymentStatus != null)
+            {
+                order.PaymentStatus = paymentStatus;
+            }
+            if (orderStatus != null)
+            {
+                order.OrderStatus = orderStatus;
+            }
 
+            _context.SaveChanges();
+            return Ok(order);
+        }
+       
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult Delete(int? id)
@@ -203,7 +239,8 @@ namespace EcommerceApi.Controllers
                 Message = $"Order with id {id} deleted successfully"
 
             });
-        } 
+        }
+        
 
-    }
+        }
 }
